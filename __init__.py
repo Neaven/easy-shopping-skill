@@ -150,31 +150,31 @@ class EasyShopping(MycroftSkill):
 
     @intent_handler(IntentBuilder('AskItemBrand').require('Brand').require('getDetailContext').build())
     def handle_ask_item_brand(self, message):
-        self.speak('I am talking about the brand of the item')
-        # self.handle_ask_item_detail('brand', self.brand_str)
+        # self.speak('I am talking about the brand of the item')
+        self.handle_ask_item_detail('brand', self.brand_str)
 
     @intent_handler(IntentBuilder('AskItemCategory').require('Category').require('getDetailContext').build())
     def handle_ask_item_category(self, message):
-        self.speak('I am talking about the category of the item')
-        # self.handle_ask_item_detail('category', self.category_str)
+        # self.speak('I am talking about the category of the item')
+        self.handle_ask_item_detail('category', self.category_str)
 
     @intent_handler(IntentBuilder('AskItemColor').require('Color').require('getDetailContext').build())
     def handle_ask_item_color(self, message):
-        self.speak('I am talking about the color of the item')
-        # self.handle_ask_item_detail('color', self.color_str)
+        # self.speak('I am talking about the color of the item')
+        self.handle_ask_item_detail('color', self.color_str)
 
     @intent_handler(IntentBuilder('AskItemKw').require('Kw').require('getDetailContext').build())
     def handle_ask_item_keywords(self, message):
-        self.speak('I am talking about the keywords of the item')
-        # self.handle_ask_item_detail('keyword', self.kw_str)
+        # self.speak('I am talking about the keywords of the item')
+        self.handle_ask_item_detail('keyword', self.kw_str)
 
     @intent_handler(IntentBuilder('AskItemInfo').require('Info').require('getDetailContext').build())
     def handle_ask_item_complete_info(self, message):
-        self.speak('I am speaking the complete information of the item')
-        # self.speak_dialog('item.complete.info', {'category': self.category_str})
-        # self.handle_ask_item_detail('color', self.color_str)
-        # self.handle_ask_item_detail('brand', self.brand_str)
-        # self.handle_ask_item_detail('keyword', self.kw_str)
+        # self.speak('I am speaking the complete information of the item')
+        self.speak_dialog('item.complete.info', {'category': self.category_str})
+        self.handle_ask_item_detail('color', self.color_str)
+        self.handle_ask_item_detail('brand', self.brand_str)
+        self.handle_ask_item_detail('keyword', self.kw_str)
 
     # under class EasyShoppingSkill(MycroftSkill):
 
@@ -211,6 +211,15 @@ class EasyShopping(MycroftSkill):
             self.speak('OK. I won\'t take photo')
         else:
             self.speak('I cannot understand what you are saying')
+
+    def handle_ask_item_detail(self, detail, detail_str):
+        if detail_str == '':
+            # add expect_response
+            self.speak_dialog('cannot.get', {'detail': detail}, expect_response=True) # This calls .dialog file.
+        else:
+            dialog_str = 'item.' + detail
+            # add expect_response
+            self.speak_dialog(dialog_str, {detail: detail_str}, expect_response=True) # This calls .dialog file.
 
 def create_skill():
     return EasyShopping()
