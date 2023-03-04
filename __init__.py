@@ -2,6 +2,26 @@ from mycroft import MycroftSkill, intent_file_handler, intent_handler
 from mycroft.skills.context import removes_context
 from adapt.intent import IntentBuilder
 
+LOGSTR = '********************====================########## '
+
+def generate_str(possible_list):
+    '''
+    Generate string for Mycroft to speak it
+    Args: 
+        possible_list: array list with len = 3, each element is a string
+    Returns:
+        a string, e.g. possible_list = ['a', 'b', 'c'], res = 'a, b, and c'
+    '''
+    res = ''
+    if len(possible_list) == 3:
+        res = possible_list[0] + ' ' + \
+            possible_list[1] + ' and ' + possible_list[2]
+    elif len(possible_list) == 2:
+        res = possible_list[0] + ' and ' + possible_list[1]
+    elif len(possible_list) == 1:
+        res = possible_list[0]
+
+    return res
 
 class EasyShopping(MycroftSkill):
     def __init__(self):
@@ -152,7 +172,7 @@ class EasyShopping(MycroftSkill):
         self.img_hand = ''
         self.img_multi = ''
 
-    
+
     # https://mycroft-ai.gitbook.io/docs/skill-development/user-interaction/intents/adapt-intents
     # @intent_handler(IntentBuilder('FaqIntent').require('What').optionally('Is').optionally('Can'))
     # def handle_thank_you_intent(self, message):
