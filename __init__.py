@@ -24,8 +24,16 @@ def generate_str(possible_list):
     return res
 
 class EasyShopping(MycroftSkill):
+    # Edit in main class: class EasyShopping(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self)
+        self.category_str = ''
+        self.color_str = ''
+        self.brand_str = ''
+        self.kw_str = ''
+        self.img_multi = ''
+        self.img_hand = ''
+        self.log.info(LOGSTR + "_init_ EasyShoppingSkill")
 
     # Padatious intent cause no voc file
     # this is an older version decorator
@@ -36,11 +44,15 @@ class EasyShopping(MycroftSkill):
     # use case 1
     @intent_handler('view.goods.intent')
     def handle_view_goods(self, message):
-        self.speak(
-            'Taking a photo now. Please wait a second for me to get the result.')
-        self.speak(
-            'I find some goods here, you can ask me whatever goods you want.')
-        # self.speak_dialog('take.photo',{'item' : 'apple'})
+        self.speak_dialog('take.photo')
+        self.img_multi = ''
+        self.img_hand = ''
+
+        # suppose we use camera to take a photo here, 
+        # then the function will return an image path
+        self.img_multi = 'testPhoto/multi.jpeg'
+
+        self.speak('I find some goods here, you can ask me whatever goods you want.')
 
     # the intent_handler() decorator can be used to create a Padatious intent handler by passing in the filename of the .intent file as a string
     # every single line in the intent needs to have the variable category
@@ -52,30 +64,35 @@ class EasyShopping(MycroftSkill):
 
     @intent_handler('is.there.any.goods.intent')
     def handle_is_there_any_goods(self, message):
-        # in real application, label_str and loc_list will return from CV API
-        label_list = [['milk', 'drink', 'bottle'], ['milk', 'drink', 'bottle']]
-        loc_list = ['left top', 'right top']
+        if self.img_multi == '':
+            # if self.img_multi == '', 
+            # then it means that user hasn't invoked intent(handle_view_goods)
+            self.handle_no_context1(message)
+        else:
+            # in real application, label_str and loc_list will return from CV API
+            label_list = [['milk', 'drink', 'bottle'], ['milk', 'drink', 'bottle']]
+            loc_list = ['left top', 'right top']
 
-        category_label = message.data.get('category')
-        detected = 0
+            category_label = message.data.get('category')
+            detected = 0
 
-        for i in range(len(label_list)):
-            label_str = generate_str(label_list[i])
-            label_str = label_str.lower()
+            for i in range(len(label_list)):
+                label_str = generate_str(label_list[i])
+                label_str = label_str.lower()
 
-            if category_label is not None:
-                if category_label in label_str:
-                    self.speak_dialog('yes.goods',
-                                      {'category': category_label,
-                                       'location': loc_list[i]})
-                    detected = 1
-                    break
-            else:
-                continue
+                if category_label is not None:
+                    if category_label in label_str:
+                        self.speak_dialog('yes.goods',
+                                        {'category': category_label,
+                                        'location': loc_list[i]})
+                        detected = 1
+                        break
+                else:
+                    continue
 
-        if detected == 0:
-            self.speak_dialog('no.goods',
-                              {'category': category_label})
+            if detected == 0:
+                self.speak_dialog('no.goods',
+                                {'category': category_label})
 
     # use case 2
 
@@ -184,6 +201,16 @@ class EasyShopping(MycroftSkill):
     #     """ This is a Padatious intent handler. It is triggered using a list of sample phrases."""
     #     self.speak_dialog("how.are.you")
 
+    def handle_no_context1(self, message):
+        self.speak('Please let me have a look at what\'s in front of you first.')
+        # add prompts
+        take_photo = self.ask_yesno('do.you.want.to.take.a.photo') # This calls .dialog file.
+        if take_photo == 'yes':
+            self.handle_view_goods(message)
+        elif take_photo == 'no':
+            self.speak('OK. I won\'t take photo')
+        else:
+            self.speak('I cannot understand what you are saying')
 
 def create_skill():
     return EasyShopping()
