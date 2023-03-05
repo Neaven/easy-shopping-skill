@@ -4,11 +4,8 @@ import os
 
 def take_photo():
     print('take photo process start')
-    
-    url = os.environ.get('PULSE_SERVER')
-    print(url)
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture('http://192.168.1.100:8180')
     img_name = 'cap_img_' + str(time.time()) + '.jpg'
 
     # Change this variable to the path you want to store the image
