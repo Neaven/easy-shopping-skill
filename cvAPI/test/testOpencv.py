@@ -1,8 +1,13 @@
 import cv2
 import time
+import os
 
 def take_photo():
     print('take photo process start')
+    
+    url = os.environ.get('PULSE_SERVER')
+    print(url)
+
     cap = cv2.VideoCapture(0)
     img_name = 'cap_img_' + str(time.time()) + '.jpg'
 
