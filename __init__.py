@@ -35,7 +35,7 @@ def take_photo(img_queue):
     LOG.info(LOGSTR + 'take photo process start')
     if MODE == 'TEST':
         index = random.randint(1, 12)
-        img_name = 'cap_img_' + str(time.time()) + index + '.jepg'
+        img_name = 'cap_img_' + str(time.time()) + str(index) + '.jepg'
         img_path = TEST_IMAGE_PATH_HAND + img_name
         img_queue.put(img_path)
         LOG.info(LOGSTR + 'take photo process end')
