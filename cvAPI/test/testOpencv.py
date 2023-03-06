@@ -1,6 +1,6 @@
 import cv2
 import time
-import os
+# import os
 
 def take_photo():
     print('take photo process start')
