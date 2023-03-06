@@ -5,7 +5,8 @@ import os
 def take_photo():
     print('take photo process start')
 
-    cap = cv2.VideoCapture('http://192.168.1.100:8180')
+    # cap = cv2.VideoCapture('http://192.168.1.100:8180')
+    cap = cv2.VideoCapture(0)
     img_name = 'cap_img_' + str(time.time()) + '.jpg'
 
     # Change this variable to the path you want to store the image
@@ -15,7 +16,7 @@ def take_photo():
     cout = 0
     while True:
         ret, frame = cap.read()
-        # cv2.waitKey(1)
+        cv2.waitKey(1)
         cv2.imshow('capture', frame)
         cout += 1 
         if cout == 50:

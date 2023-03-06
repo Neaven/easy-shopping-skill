@@ -1,8 +1,57 @@
+from adapt.intent import IntentBuilder
+from multiprocessing import Process, Queue
 from mycroft import MycroftSkill, intent_file_handler, intent_handler
 from mycroft.skills.context import removes_context
-from adapt.intent import IntentBuilder
+from mycroft.util import LOG
+
+import cv2
+import os
+import time
+
+from .cvAPI import getDetail, getObjLabel
 
 LOGSTR = '********************====================########## '
+
+# mycroft-msm install https://github.com/Neaven/easy-shopping-skill
+
+# 'NO TEST': use the image taken by the camera
+# 'TEST': use the image in /photo folder, 
+# In both mode, camera will work normally, i.e. take the photo, save the photo
+# MODE = 'PROD'
+MODE = 'TEST'
+
+# need to be changed
+IMAGE_STORE_PATH = '/opt/mycroft/skills/easy-shopping-skill.neaven/photo/'
+# need to be changed
+TEST_IMAGE_PATH_MULTI = '/opt/mycroft/skills/easy-shopping-skill.neaven/testPhoto/multi.jpeg'
+# need to be changed
+TEST_IMAGE_PATH_HAND = '/opt/mycroft/skills/easy-shopping-skill.neaven/testPhoto/2.jpeg'
+
+def take_photo(img_queue):
+    '''
+    Do taking photo
+    '''
+    LOG.info(LOGSTR + 'take photo process start')
+    cap = cv2.VideoCapture(0)
+    img_name = 'cap_img_' + str(time.time()) + '.jpg'
+    img_path = IMAGE_STORE_PATH + img_name
+
+    #<-- Take photo in specific time duration -->
+    cout = 0
+    while True:
+        ret, frame = cap.read()
+        cv2.waitKey(1)
+        cv2.imshow('capture', frame)
+        cout += 1 
+        if cout == 50:
+            img_queue.put(img_path)
+            cv2.imwrite(img_path, frame)
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    LOG.info(LOGSTR + 'take photo process end')
+    os._exit(0)
 
 def generate_str(possible_list):
     '''
@@ -48,11 +97,15 @@ class EasyShopping(MycroftSkill):
         self.img_multi = ''
         self.img_hand = ''
 
-        # suppose we use camera to take a photo here, 
-        # then the function will return an image path
-        self.img_multi = 'testPhoto/multi.jpeg'
+        #create another process to do the photo taking
+        img_queue = Queue()
+        take_photo_process = Process(target=take_photo, args=(img_queue,))
+        take_photo_process.daemon = True
+        take_photo_process.start()
+        take_photo_process.join()
+        self.img_multi = img_queue.get()
 
-        self.speak('I find some goods here, you can ask me whatever goods you want.')
+        self.speak('I find some goods here, you can ask me whatever goods you want.', expect_response=True)
 
     # the intent_handler() decorator can be used to create a Padatious intent handler by passing in the filename of the .intent file as a string
     # every single line in the intent needs to have the variable category
@@ -65,34 +118,62 @@ class EasyShopping(MycroftSkill):
     @intent_handler('is.there.any.goods.intent')
     def handle_is_there_any_goods(self, message):
         if self.img_multi == '':
-            # if self.img_multi == '', 
-            # then it means that user hasn't invoked intent(handle_view_goods)
             self.handle_no_context1(message)
+
         else:
-            # in real application, label_str and loc_list will return from CV API
-            label_list = [['milk', 'drink', 'bottle'], ['milk', 'drink', 'bottle']]
-            loc_list = ['left top', 'right top']
+            # call cv api, and get result. 
+            try:
+                self.log.info(LOGSTR + 'actual img path')
+                self.log.info(self.img_multi)
+                if MODE == 'TEST':
+                    self.log.info(LOGSTR + 'testing mode, use another image')
+                    self.img_multi = TEST_IMAGE_PATH_MULTI
 
-            category_label = message.data.get('category')
-            detected = 0
+                objectlist = getObjLabel.getObjectsThenLabel(self.img_multi)
+                label_list = []
+                loc_list = []
+                detected = 0
 
-            for i in range(len(label_list)):
-                label_str = generate_str(label_list[i])
-                label_str = label_str.lower()
+                category_label = message.data.get('category')
 
-                if category_label is not None:
-                    if category_label in label_str:
-                        self.speak_dialog('yes.goods',
-                                        {'category': category_label,
-                                        'location': loc_list[i]})
-                        detected = 1
-                        break
-                else:
-                    continue
+                for obj in objectlist['objectList']:
+                    label_list.append(obj['name'])
+                    loc_list.append(obj['loc'])
+            
+                if category_label:
+                    for i in range(0,len(label_list)):
+                        label_str = generate_str(label_list[i])
+                        label_str = label_str.lower()
+                
+                        if category_label is not None:
+                            if category_label in label_str:
+                                self.speak_dialog('yes.goods',
+                                            {'category': category_label,
+                                            'location': loc_list[i]})
+                                detected = 1
+                                break
+                        else:
+                            continue
 
-            if detected == 0:
-                self.speak_dialog('no.goods',
-                                {'category': category_label})
+                if detected == 0 and category_label:
+                    self.speak_dialog('no.goods',
+                    {'category': category_label})
+
+            except Exception as e:
+                self.log.error((LOGSTR + "Error: {0}").format(e))
+                self.speak_dialog(
+                "exception", {"action": "calling computer vision API"})
+
+    def handle_no_context1(self, message):
+        self.speak('Please let me have a look at what\'s in front of you first.')
+        # add prompts
+        take_photo = self.ask_yesno('do.you.want.to.take.a.photo') # This calls .dialog file.
+        if take_photo == 'yes':
+            self.handle_view_goods(message)
+        elif take_photo == 'no':
+            self.speak('OK. I won\'t take photo')
+        else:
+            self.speak('I cannot understand what you are saying')
 
     # use case 2
 
@@ -125,33 +206,65 @@ class EasyShopping(MycroftSkill):
     # def handle_finish_current_item(self, message):
     #     self.speak('Got you request. Let\'s continue shopping!')
 
+    def clear_all(self):
+        self.types_str = ''
+        self.color_str = ''
+        self.logo_str = ''
+        self.kw_str = ''
+        self.img_hand = ''
+        self.img_multi = ''
+
     @intent_handler(IntentBuilder('ViewItemInHand').require('ViewItemInHandKeyWord'))
     def handle_view_item_in_hand(self, message):
         self.speak_dialog('take.photo')
         self.img_multi = ''
         self.img_hand = ''
 
-        # suppose we use camera to take a photo here,
-        # then the function will return an image path
-        self.img_hand = 'testPhoto/2.jpeg'
+        # create another process to do the photo taking
+        img_queue = Queue()
+        take_photo_process = Process(target=take_photo, args=(img_queue,))
+        take_photo_process.daemon = True
+        take_photo_process.start()
+        take_photo_process.join()
+        self.img_hand = img_queue.get()
 
-        # suppose we call CV API here to get the result,
-        # the result will all be list, then we use generate_str() to create string
-        self.category_str = generate_str(['milk', 'bottle', 'drink'])
-        self.brand_str = generate_str(['Dutch Lady', 'Lady'])
-        self.color_str = generate_str(['white', 'black', 'blue'])
-        self.kw_str = ' '.join(['milk', 'bottle', 'protein', 'pure', 'farm'])
+        # call cv api, and get result. 
+        try:
+            self.log.info(LOGSTR + 'actual img path')
+            self.log.info(self.img_hand)
+            if MODE == 'TEST':
+                self.log.info(LOGSTR + 'testing mode, use another image')
+                self.img_hand = TEST_IMAGE_PATH_HAND
 
-        # set the context
-        self.set_context('getDetailContext')
+            detail = getDetail(self.img_hand)
+            self.detail = detail
 
-        # speak dialog
-        self.speak_dialog('item.category', {'category': self.category_str})
+            self.category_str = generate_str(detail['objectLabel'])
 
-    @intent_handler(IntentBuilder('AskItemBrand').require('Brand').require('getDetailContext').build())
-    def handle_ask_item_brand(self, message):
-        # self.speak('I am talking about the brand of the item')
-        self.handle_ask_item_detail('brand', self.brand_str)
+            if self.category_str != '':
+                self.set_context('getDetailContext')
+                self.speak_dialog(
+                    'item.category', {'category': self.category_str}, expect_response=True)
+
+                self.brand_str = generate_str(detail['objectLogo'])
+
+                color_list = []
+                for color in detail['objectColor']:
+                    color_list.append(color['colorName'])
+                self.color_str = generate_str(color_list)
+
+                self.kw_str = ' '.join(detail['objectText'])
+
+            else:
+                self.clear_all()
+                self.remove_context('getDetailContext')
+                self.speak(
+                    'I cannot understand what is in your hand. Maybe turn around it and let me see it again', expect_response=True)
+                
+        except Exception as e:
+            self.log.error((LOGSTR + "Error: {0}").format(e))
+            self.speak_dialog(
+                "exception", {"action": "calling computer vision API"})
 
     @intent_handler(IntentBuilder('AskItemCategory').require('Category').require('getDetailContext').build())
     def handle_ask_item_category(self, message):
@@ -162,6 +275,11 @@ class EasyShopping(MycroftSkill):
     def handle_ask_item_color(self, message):
         # self.speak('I am talking about the color of the item')
         self.handle_ask_item_detail('color', self.color_str)
+
+    @intent_handler(IntentBuilder('AskItemBrand').require('Brand').require('getDetailContext').build())
+    def handle_ask_item_brand(self, message):
+        # self.speak('I am talking about the brand of the item')
+        self.handle_ask_item_detail('brand', self.brand_str)
 
     @intent_handler(IntentBuilder('AskItemKw').require('Kw').require('getDetailContext').build())
     def handle_ask_item_keywords(self, message):
@@ -178,17 +296,45 @@ class EasyShopping(MycroftSkill):
 
     # under class EasyShoppingSkill(MycroftSkill):
 
-    @intent_handler(IntentBuilder('FinishOneItem').require('Finish').require('getDetailContext').build())
+    @intent_handler('not.take.item.intent')
     @removes_context('getDetailContext')
-    def handle_finish_current_item(self, message):
-        self.speak('Got you request. Let\'s continue shopping!')
-        self.types_str = ''
-        self.color_str = ''
-        self.logo_str = ''
-        self.kw_str = ''
-        self.img_hand = ''
-        self.img_multi = ''
+    def handle_finish_current_item_not_take(self, message):
+        if self.img_hand != '':
+            self.speak('Don\'t put it into cart. Let\'s continue shopping!')
+            self.clear_all()
+        else:
+            self.speak('Sorry, I don\'t understand')
 
+    @intent_handler('take.item.intent')
+    @removes_context('getDetailContext')
+    def handle_finish_current_item_take(self, message):
+        if self.img_hand != '':
+            self.speak('I will put the item into cart. Let\'s continue shopping!')
+            self.clear_all()
+        else:
+            self.speak('Sorry, I don\'t understand')
+
+    @intent_handler(IntentBuilder('NoContext').one_of('Category', 'Color', 'Brand', 'Kw', 'Info'))
+    def handle_no_context2(self, message):
+        self.speak('Please let me have a look at what\'s on your hand first.')
+        take_photo = self.ask_yesno('do.you.want.to.take.a.photo')
+        if take_photo == 'yes':
+            self.handle_view_item_in_hand(message)
+        elif take_photo == 'no':
+            self.speak('OK. I won\'t take photo')
+        else:
+            self.speak('I cannot understand what you are saying')
+
+    # @intent_handler(IntentBuilder('FinishOneItem').require('Finish').require('getDetailContext').build())
+    # @removes_context('getDetailContext')
+    # def handle_finish_current_item(self, message):
+    #     self.speak('Got you request. Let\'s continue shopping!')
+    #     self.types_str = ''
+    #     self.color_str = ''
+    #     self.logo_str = ''
+    #     self.kw_str = ''
+    #     self.img_hand = ''
+    #     self.img_multi = ''
 
     # https://mycroft-ai.gitbook.io/docs/skill-development/user-interaction/intents/adapt-intents
     # @intent_handler(IntentBuilder('FaqIntent').require('What').optionally('Is').optionally('Can'))
@@ -200,17 +346,6 @@ class EasyShopping(MycroftSkill):
     # def handle_how_are_you_intent(self, message):
     #     """ This is a Padatious intent handler. It is triggered using a list of sample phrases."""
     #     self.speak_dialog("how.are.you")
-
-    def handle_no_context1(self, message):
-        self.speak('Please let me have a look at what\'s in front of you first.')
-        # add prompts
-        take_photo = self.ask_yesno('do.you.want.to.take.a.photo') # This calls .dialog file.
-        if take_photo == 'yes':
-            self.handle_view_goods(message)
-        elif take_photo == 'no':
-            self.speak('OK. I won\'t take photo')
-        else:
-            self.speak('I cannot understand what you are saying')
 
     def handle_ask_item_detail(self, detail, detail_str):
         if detail_str == '':
