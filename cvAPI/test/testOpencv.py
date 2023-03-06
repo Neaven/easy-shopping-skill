@@ -15,7 +15,7 @@ def take_photo():
     cout = 0
     while True:
         ret, frame = cap.read()
-        cv2.waitKey(1)
+        # cv2.waitKey(1)
         cv2.imshow('capture', frame)
         cout += 1 
         if cout == 50:
