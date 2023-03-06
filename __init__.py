@@ -1,10 +1,11 @@
 from adapt.intent import IntentBuilder
 from multiprocessing import Process, Queue
-from mycroft import MycroftSkill, intent_file_handler, intent_handler
+from mycroft import MycroftSkill, intent_handler
 from mycroft.skills.context import removes_context
 from mycroft.util import LOG
 
 import cv2
+import random
 import os
 import time
 
@@ -25,33 +26,40 @@ IMAGE_STORE_PATH = '/opt/mycroft/skills/easy-shopping-skill.neaven/photo/'
 # need to be changed
 TEST_IMAGE_PATH_MULTI = '/opt/mycroft/skills/easy-shopping-skill.neaven/testPhoto/multi.jpeg'
 # need to be changed
-TEST_IMAGE_PATH_HAND = '/opt/mycroft/skills/easy-shopping-skill.neaven/testPhoto/2.jpeg'
+TEST_IMAGE_PATH_HAND = '/opt/mycroft/skills/easy-shopping-skill.neaven/testPhoto/'
 
 def take_photo(img_queue):
     '''
     Do taking photo
     '''
     LOG.info(LOGSTR + 'take photo process start')
-    cap = cv2.VideoCapture(0)
-    img_name = 'cap_img_' + str(time.time()) + '.jpg'
-    img_path = IMAGE_STORE_PATH + img_name
+    if MODE == 'TEST':
+        index = random.randint(1, 12)
+        img_name = 'cap_img_' + str(time.time()) + index + '.jepg'
+        img_path = TEST_IMAGE_PATH_HAND + img_name
+        img_queue.put(img_path)
+        LOG.info(LOGSTR + 'take photo process end')
+    else:
+        cap = cv2.VideoCapture(0)
+        img_name = 'cap_img_' + str(time.time()) + '.jpg'
+        img_path = IMAGE_STORE_PATH + img_name
 
-    #<-- Take photo in specific time duration -->
-    cout = 0
-    while True:
-        ret, frame = cap.read()
-        cv2.waitKey(1)
-        cv2.imshow('capture', frame)
-        cout += 1 
-        if cout == 50:
-            img_queue.put(img_path)
-            cv2.imwrite(img_path, frame)
-            break
+        #<-- Take photo in specific time duration -->
+        cout = 0
+        while True:
+            ret, frame = cap.read()
+            cv2.waitKey(1)
+            cv2.imshow('capture', frame)
+            cout += 1 
+            if cout == 50:
+                img_queue.put(img_path)
+                cv2.imwrite(img_path, frame)
+                break
 
-    cap.release()
-    cv2.destroyAllWindows()
-    LOG.info(LOGSTR + 'take photo process end')
-    os._exit(0)
+        cap.release()
+        cv2.destroyAllWindows()
+        LOG.info(LOGSTR + 'take photo process end')
+        os._exit(0)
 
 def generate_str(possible_list):
     '''
@@ -232,9 +240,9 @@ class EasyShopping(MycroftSkill):
         try:
             self.log.info(LOGSTR + 'actual img path')
             self.log.info(self.img_hand)
-            if MODE == 'TEST':
-                self.log.info(LOGSTR + 'testing mode, use another image')
-                self.img_hand = TEST_IMAGE_PATH_HAND
+            # if MODE == 'TEST':
+            #     self.log.info(LOGSTR + 'testing mode, use another image')
+            #     self.img_hand = TEST_IMAGE_PATH_HAND + '2.jpeg'
 
             detail = getDetail(self.img_hand)
             self.detail = detail
