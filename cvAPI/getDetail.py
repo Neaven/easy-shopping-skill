@@ -1,9 +1,9 @@
-from tkinter.tix import Tree
+# from tkinter.tix import Tree
 from webcolors import CSS3_HEX_TO_NAMES
 from webcolors import hex_to_rgb
 from scipy.spatial import KDTree
 import time
-import sys
+# import sys
 
 MYCROFT_VERSION = True
 TEST_IMAGE_PATH = '/opt/mycroft/skills/easy-shopping-skill.neaven/testPhoto/1.jpeg'

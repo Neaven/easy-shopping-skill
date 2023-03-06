@@ -1,9 +1,9 @@
 import base64
 import math
-from os import confstr
+# from os import confstr
 import time
 import cv2
-import sys
+# import sys
 
 MYCROFT_VERSION = True
 TEST_IMAGE_PATH = '/opt/mycroft/skills/easy-shopping-skill.neaven/testPhoto/1.jpeg'
