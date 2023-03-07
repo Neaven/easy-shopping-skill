@@ -124,9 +124,9 @@ class EasyShopping(MycroftSkill):
 
         if items_count < 5:
             for obj in objectlist['objectList']:
-                self.speak_dialog('yes.goods', {'category': obj['name'][0]["description"],'location': obj['loc']})
-                self.speak_dialog('yes.goods', {'category': obj['name'][1]["description"],'location': obj['loc']})
-                self.speak_dialog('yes.goods', {'category': obj['name'][2]["description"],'location': obj['loc']})
+                self.speak_dialog('yes.goods', {'category': obj['name']["description"],'location': obj['loc']})
+                # self.speak_dialog('yes.goods', {'category': obj['name'][1]["description"],'location': obj['loc']})
+                # self.speak_dialog('yes.goods', {'category': obj['name'][2]["description"],'location': obj['loc']})
         else:
             self.speak('I find some goods here, you can ask me whatever goods you want.', expect_response=True)
 
