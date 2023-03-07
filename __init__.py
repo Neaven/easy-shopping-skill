@@ -37,6 +37,7 @@ def take_photo(img_queue):
     LOG.info(LOGSTR + 'take photo process start')
     if MODE == 'TEST':
         index = random.randint(1, 13)
+        img_name = ''
         if index == 13:
             img_name = 'multi.jpeg'
         else:
