@@ -119,6 +119,7 @@ class EasyShopping(MycroftSkill):
         take_photo_process.join()
         self.img_multi = img_queue.get()        
 
+        # 2.4.1 Voice Assistant Integration [Workshop Challenge]
         objectlist = getObjLabel.getObjectsThenLabel(self.img_multi)
         items_count = objectlist['objectNum']
 
@@ -339,11 +340,11 @@ class EasyShopping(MycroftSkill):
     def handle_finish_current_item_take(self, message):
         if self.img_hand != '':
             self.speak('I will put the item into cart. Let\'s continue shopping!')
+            # 2.2.1 Voice Assistant Development [Workshop Challenge]
             with open(CSV_PATH, mode='w') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter=',')
-
-                # csv_writer.writerow(['category'])
                 csv_writer.writerow([self.category_str])
+
             self.clear_all()
         else:
             self.speak('Sorry, I don\'t understand')
@@ -391,6 +392,7 @@ class EasyShopping(MycroftSkill):
             self.speak_dialog(dialog_str, {detail: detail_str}, expect_response=True) # This calls .dialog file.
 
     # use case 3
+    # 2.2.1 Voice Assistant Development [Workshop Challenge]
     @intent_handler('have.bought.intent')
     def have_bought_goods(self, message):
         category_label = message.data.get('category')
@@ -417,6 +419,15 @@ class EasyShopping(MycroftSkill):
                     self.speak('No')
         else:
             self.speak('I cannot understand what you are saying')
+
+    # 1.3.2 Voice Assistant Platform [Workshop Challenge]
+    @intent_handler('faq.intent')
+    def handle_padatious_faq(self, message):
+        self.speak('I am a virtual assistant that can assist the visually impaired to do easy shopping. This is padatious intent.')
+
+    @intent_handler(IntentBuilder('FAQ').require('Faq').build())
+    def handle_adapt_faq(self, message):
+        self.speak('I am a virtual assistant that can assist the visually impaired to do easy shopping. This is adapt intent.')
 
 def create_skill():
     return EasyShopping()
