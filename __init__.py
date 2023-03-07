@@ -319,7 +319,7 @@ class EasyShopping(MycroftSkill):
     def handle_finish_current_item_take(self, message):
         if self.img_hand != '':
             self.speak('I will put the item into cart. Let\'s continue shopping!')
-            with open('basket/items.csv', mode='w') as csv_file:
+            with open('./basket/items.csv', mode='w') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter=',')
 
                 # csv_writer.writerow(['category'])
@@ -378,7 +378,7 @@ class EasyShopping(MycroftSkill):
             self.speak('Please let me check first.')           
 
             detected = 0
-            with open('basket/items.csv') as csv_file:
+            with open('./basket/items.csv') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
                 line_count = 0
                 for row in csv_reader:
