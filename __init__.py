@@ -373,9 +373,9 @@ class EasyShopping(MycroftSkill):
     # use case 3
     @intent_handler('have.bought.intent')
     def have_bought_goods(self, message):
+        category_label = message.data.get('category')
         if category_label is not None:
-            self.speak('Please let me check first.')
-            category_label = message.data.get('category')
+            self.speak('Please let me check first.')           
 
             detected = 0
             with open('basket/items.csv') as csv_file:
