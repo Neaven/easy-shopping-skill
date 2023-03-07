@@ -4,6 +4,7 @@ from mycroft import MycroftSkill, intent_handler
 from mycroft.skills.context import removes_context
 from mycroft.util import LOG
 
+import csv
 import cv2
 import random
 import os
@@ -318,6 +319,11 @@ class EasyShopping(MycroftSkill):
     def handle_finish_current_item_take(self, message):
         if self.img_hand != '':
             self.speak('I will put the item into cart. Let\'s continue shopping!')
+            with open('basket/items.csv', mode='w') as csv_file:
+                csv_writer = csv.writer(csv_file, delimiter=',')
+
+                # csv_writer.writerow(['category'])
+                csv_writer.writerow([self.category_str])
             self.clear_all()
         else:
             self.speak('Sorry, I don\'t understand')
@@ -363,6 +369,34 @@ class EasyShopping(MycroftSkill):
             dialog_str = 'item.' + detail
             # add expect_response
             self.speak_dialog(dialog_str, {detail: detail_str}, expect_response=True) # This calls .dialog file.
+
+    # use case 3
+    @intent_handler('have.bought.intent')
+    def have_bought_goods(self, message):
+        if category_label is not None:
+            self.speak('Please let me check first.')
+            category_label = message.data.get('category')
+
+            detected = 0
+            with open('basket/items.csv') as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=',')
+                line_count = 0
+                for row in csv_reader:
+                    line_count+=1
+                    item = row[0]
+                    print(item)
+                    if category_label in item:
+                        detected = 1
+                        break
+            
+            if detected == 1:
+                response = self.ask_yesno('Yes, do you want to know more about it?')
+                if response == 'yes':
+                    self.speak_dialog('item.complete.info', {'category': self.category_str})
+            if detected == 0 and category_label:
+                    self.speak('No')
+        else:
+            self.speak('I cannot understand what you are saying')
 
 def create_skill():
     return EasyShopping()
