@@ -146,6 +146,7 @@ class EasyShopping(MycroftSkill):
 
                 category_label = message.data.get('category')
 
+                print('Neaven ' + str(objectlist['objectNum']))
                 for obj in objectlist['objectList']:
                     label_list.append(obj['name'])
                     loc_list.append(obj['loc'])
