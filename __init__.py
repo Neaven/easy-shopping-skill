@@ -44,7 +44,7 @@ def take_photo(img_queue):
             img_name = str(index) + '.jpeg'
         img_path = TEST_IMAGE_PATH_HAND + img_name
         img_queue.put(img_path)
-        LOG.info(LOGSTR + 'take photo process end')
+        LOG.info(LOGSTR + 'take photo ' + img_path + ' process end')
     else:
         cap = cv2.VideoCapture(0)
         img_name = 'cap_img_' + str(time.time()) + '.jpg'
