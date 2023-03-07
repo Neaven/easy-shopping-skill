@@ -36,8 +36,11 @@ def take_photo(img_queue):
     '''
     LOG.info(LOGSTR + 'take photo process start')
     if MODE == 'TEST':
-        index = random.randint(1, 12)
-        img_name = str(index) + '.jpeg'
+        index = random.randint(1, 13)
+        if index == 13:
+            img_name = 'multi.jpeg'
+        else:
+            img_name = str(index) + '.jpeg'
         img_path = TEST_IMAGE_PATH_HAND + img_name
         img_queue.put(img_path)
         LOG.info(LOGSTR + 'take photo process end')
@@ -115,7 +118,14 @@ class EasyShopping(MycroftSkill):
         take_photo_process.join()
         self.img_multi = img_queue.get()
 
-        self.speak('I find some goods here, you can ask me whatever goods you want.', expect_response=True)
+        objectlist = getObjLabel.getObjectsThenLabel(self.img_multi)
+        items_count = objectlist['objectNum']
+
+        if items_count < 5:
+            for obj in objectlist['objectList']:
+                self.speak_dialog('yes.goods', {'category': obj['name'],'location': obj['loc']})
+        else:
+            self.speak('I find some goods here, you can ask me whatever goods you want.', expect_response=True)
 
     # the intent_handler() decorator can be used to create a Padatious intent handler by passing in the filename of the .intent file as a string
     # every single line in the intent needs to have the variable category
@@ -135,9 +145,9 @@ class EasyShopping(MycroftSkill):
             try:
                 self.log.info(LOGSTR + 'actual img path')
                 self.log.info(self.img_multi)
-                if MODE == 'TEST':
-                    self.log.info(LOGSTR + 'testing mode, use another image')
-                    self.img_multi = TEST_IMAGE_PATH_MULTI
+                # if MODE == 'TEST':
+                #     self.log.info(LOGSTR + 'testing mode, use another image')
+                #     self.img_multi = TEST_IMAGE_PATH_MULTI
 
                 objectlist = getObjLabel.getObjectsThenLabel(self.img_multi)
                 label_list = []
@@ -146,7 +156,6 @@ class EasyShopping(MycroftSkill):
 
                 category_label = message.data.get('category')
 
-                print('Neaven ' + str(objectlist['objectNum']))
                 for obj in objectlist['objectList']:
                     label_list.append(obj['name'])
                     loc_list.append(obj['loc'])
