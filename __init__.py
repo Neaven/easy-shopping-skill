@@ -117,17 +117,22 @@ class EasyShopping(MycroftSkill):
         take_photo_process.daemon = True
         take_photo_process.start()
         take_photo_process.join()
-        self.img_multi = img_queue.get()
+        self.img_multi = img_queue.get()        
 
         objectlist = getObjLabel.getObjectsThenLabel(self.img_multi)
         items_count = objectlist['objectNum']
 
         if items_count < 5:
+            # label_list = []
+            # loc_list = []
+        
+            # for obj in objectlist['objectList']:
+            #     label_list.append(obj['name'])
+            #     loc_list.append(obj['loc'])
+
             for obj in objectlist['objectList']:
-                label_list = obj['name'];
-                self.speak_dialog('yes.goods', {'category': label_list[0],'location': obj['loc']})
-                self.speak_dialog('yes.goods', {'category': label_list[1],'location': obj['loc']})
-                self.speak_dialog('yes.goods', {'category': label_list[2],'location': obj['loc']})
+                label_list = obj['name']
+                self.speak_dialog('yes.goods', {'category': label_list,'location': obj['loc']})
         else:
             self.speak('I find some goods here, you can ask me whatever goods you want.', expect_response=True)
 
